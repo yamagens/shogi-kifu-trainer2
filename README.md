@@ -1,0 +1,1 @@
+# shogi-kifu-trainer2
