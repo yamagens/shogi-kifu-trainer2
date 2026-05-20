@@ -42,14 +42,68 @@ button.gold{background:var(--gold);border-color:#7b5517;color:white;}button.blue
 .nav-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:7px;}.side-pick{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:8px 0;}.side-pick button.on,.mode-pick button.on{background:var(--accent);border-color:var(--accent2);color:white;}
 .side-panel{display:flex;flex-direction:column;gap:8px;}.status-box{background:var(--panel2);border:1.5px solid var(--line);border-radius:10px;padding:9px;}.status-box b{color:var(--accent2);}
 .quiz-panel{background:#fff4d4;border:2px dashed var(--gold);border-radius:13px;padding:11px;text-align:center;margin-bottom:12px;}.quiz-panel .turn{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-weight:800;font-size:1.05rem;}.timer{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;color:var(--accent2);font-weight:800;}.answer-move{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:1.55rem;font-weight:800;color:var(--accent2);margin:4px 0;}
-.judge-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin:7px 0;}.judge-row button.sel-match{background:var(--ok);color:white;}.judge-row button.sel-miss{background:var(--danger);color:white;}.judge-row button.sel-hold{background:var(--blue);color:white;}
+.judge-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin:7px 0;}.judge-row button.sel-match{background:var(--ok);color:white;}.judge-row button.sel-miss{background:var(--danger);color:white;}
 .chips{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0;}.chip{font-size:.76rem;min-height:33px;border-radius:18px;padding:5px 9px;}.chip.on{background:var(--ink);color:var(--panel);}.chip.soft{border-color:var(--line);font-weight:600;background:white;}
 .score-big{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;margin:10px 0;}.score-big .v{font-size:1.85rem;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;color:var(--accent2);line-height:1.1;font-weight:800;}.score-big .l{font-size:.72rem;color:var(--muted);}
-table{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:7px;}th,td{border:1px solid var(--line);padding:5px 4px;text-align:center;vertical-align:top;}th{background:var(--wood2);}td.left{text-align:left;}.mk{font-weight:800;font-size:1rem;cursor:pointer;}.mk.match{color:var(--ok);}.mk.miss{color:var(--danger);}.mk.hold{color:var(--blue);}
+table{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:7px;}th,td{border:1px solid var(--line);padding:5px 4px;text-align:center;vertical-align:top;}th{background:var(--wood2);}td.left{text-align:left;}.mk{font-weight:800;font-size:1rem;cursor:pointer;}.mk.match{color:var(--ok);}.mk.miss{color:var(--danger);}
 .lib-tools{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:8px 0;}.lib-item{background:white;border:1.5px solid var(--line);border-radius:11px;padding:10px;margin-bottom:9px;}.lib-item h3{font-size:1rem;margin:0 0 3px;}.lib-meta{font-size:.76rem;color:var(--muted);}.sess-list{display:flex;flex-direction:column;gap:4px;margin:7px 0;}.sess-row{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:5px 8px;}.sess-rate{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:1.45rem;font-weight:800;color:var(--accent2);line-height:1;}.sess-label{font-size:.73rem;color:var(--muted);}.lib-buttons{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:7px;}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--panel);padding:10px 18px;border-radius:24px;font-size:.85rem;z-index:50;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90%;text-align:center;}.toast.show{opacity:1;}
 body.quiz-on .board-layout{grid-template-columns:minmax(300px,360px) 1fr;}body.quiz-on #navRow,body.quiz-on #metaBar,body.quiz-on #lastMoveDisp,body.quiz-on .ply-info{display:none;}body.quiz-on .board-frame,body.quiz-on .board,body.quiz-on .komadai,body.quiz-on .coords{max-width:340px;}body.quiz-on #boardCard{padding:9px;}
 @media(max-width:760px){body{max-width:560px}.board-layout{display:block}.side-panel{margin-top:10px}.score-big{grid-template-columns:1fr 1fr}.lib-buttons{grid-template-columns:1fr}.nav-row{grid-template-columns:repeat(2,1fr)}.row2,.row3{grid-template-columns:1fr}.judge-row{grid-template-columns:1fr}.app-head{align-items:flex-start}.app-head h1{font-size:1.18rem}.rank-coords{right:-14px}body.quiz-on .board-frame,body.quiz-on .board,body.quiz-on .komadai,body.quiz-on .coords{max-width:305px}.koma{font-size:clamp(14px,4.5vw,21px)}}
+
+/* ===== v0.3 iPhone compact / white board overrides ===== */
+body{padding:10px 8px 60px;}
+.board{background:#fff;border:2px solid #111;margin:3px 0;}
+.cell{border:.5px solid #111;background:#fff;}
+.cell.hl{background:#ffe96a!important;}
+.koma{width:100%;height:100%;background:transparent!important;border:0!important;clip-path:none!important;box-shadow:none!important;color:#111;font-size:clamp(15px,5.1vw,25px);line-height:1;}
+.koma.gote{transform:rotate(180deg);}
+.koma.prom{color:#b00000!important;}
+.komadai{background:#fff;border:1.5px solid #111;border-radius:6px;min-height:30px;padding:3px 6px;}
+.komadai .lab{color:#111;font-size:.68rem;}.hand-koma{background:transparent;border:0;padding:0 4px;color:#111;}
+.coords,.rank-coords{color:#111;}
+.nav-row{grid-template-columns:repeat(4,1fr)!important;}
+.nav-row button{font-size:1.05rem;min-height:38px;padding:5px 2px;}
+.judge-row{grid-template-columns:1fr 1fr 1.12fr!important;}
+.record-buttons{margin:4px 0 6px;}
+.record-buttons button{min-height:40px;font-size:1.05rem;padding:5px 4px;}
+.answer-btn{width:100%;min-height:42px;margin-top:6px;}
+.quit-btn{width:100%;margin-top:5px;border-color:var(--danger);color:var(--danger);min-height:34px;padding:4px;font-size:.82rem;}
+.compact-field{margin-bottom:5px;}.compact-field input{padding:6px;min-height:34px;font-size:.86rem;}.detail-note textarea{padding:6px;font-size:.82rem;}
+.compact-chips{gap:4px;margin:4px 0;}.compact-chips .chip{font-size:.68rem;min-height:27px;padding:3px 6px;}
+.compact-note{font-size:.72rem;margin:5px 0;padding:5px 7px;}
+.score-three{grid-template-columns:repeat(3,1fr)!important;}
+body.quiz-on{max-width:430px;padding:4px 7px 8px;overflow-x:hidden;}
+body.quiz-on .app-head,body.quiz-on .tabs,body.quiz-on #loadCard,body.quiz-on #quizSetup,body.quiz-on #bottomSaveCard{display:none!important;}
+body.quiz-on #boardCard{padding:3px;margin:0 0 4px;border:0;box-shadow:none;background:transparent;}
+body.quiz-on .board-layout{display:block;}
+body.quiz-on .side-panel{display:none;}
+body.quiz-on .board-frame,body.quiz-on .board,body.quiz-on .komadai,body.quiz-on .coords{max-width:min(92vw,310px);}
+body.quiz-on .board{border-width:2px;margin:1px 0;}
+body.quiz-on .komadai{min-height:21px;padding:1px 5px;font-size:.7rem;}
+body.quiz-on .hand-koma{font-size:.72rem;padding:0 3px;}
+body.quiz-on .komadai .lab{font-size:.58rem;}
+body.quiz-on .coords{font-size:.55rem;padding:0 2px;line-height:1.1;}
+body.quiz-on .rank-coords{font-size:.55rem;right:-12px;}
+body.quiz-on .koma{font-size:clamp(13px,5.1vw,20px);}
+body.quiz-on .quiz-panel{padding:6px 7px;margin:0;border-radius:10px;border-width:1.5px;}
+body.quiz-on .quiz-panel .turn{font-size:.93rem;line-height:1.15;}
+body.quiz-on .quiz-info{font-size:.68rem;line-height:1.25;}
+body.quiz-on .answer-move{font-size:1.25rem;line-height:1.15;margin:0 0 2px;}
+body.quiz-on .small{font-size:.68rem;line-height:1.25;}
+@media(max-width:760px){
+  body{max-width:430px;}
+  .nav-row{grid-template-columns:repeat(4,1fr)!important;}
+  .judge-row{grid-template-columns:1fr 1fr 1.12fr!important;}
+  .row2,.row3{grid-template-columns:1fr;}
+  .app-head h1{font-size:1.08rem;}
+}
+
+
+.quick-quiz{display:none;margin-top:8px;}
+.quick-side-pick{margin:0 0 7px;}
+@media(max-width:760px){#quizSetup{display:none!important;}.quick-quiz{display:block;}.quick-side-pick button{font-size:.88rem;min-height:38px;padding:5px 3px;}}
+body.quiz-on .quick-quiz{display:none!important;}
 </style>
 </head>
 <body>
@@ -58,12 +112,12 @@ body.quiz-on .board-layout{grid-template-columns:minmax(300px,360px) 1fr;}body.q
     <h1>将棋棋譜クイズトレーナー</h1>
     <div class="small">棋譜を隠して次の一手を考える学習用</div>
   </div>
-  <div class="ver">single HTML<br>GPT版0.2</div>
+  <div class="ver">single HTML<br>GPT版0.3</div>
 </header>
 
 <nav class="tabs">
   <button id="tab-study" class="on" onclick="switchTab('study')">学習</button>
-  <button id="tab-lib" onclick="switchTab('lib')">棋譜ライブラリ</button>
+  <button id="tab-lib" onclick="switchTab('lib')">ライブラリ</button>
   <button id="tab-help" onclick="switchTab('help')">使い方</button>
 </nav>
 
@@ -95,15 +149,22 @@ body.quiz-on .board-layout{grid-template-columns:minmax(300px,360px) 1fr;}body.q
         <div class="last-move" id="lastMoveDisp">開始局面</div>
         <div class="ply-info">手数 <span class="num" id="plyNum">0</span>/<span id="plyTotal">0</span></div>
         <div class="nav-row" id="navRow">
-          <button onclick="goPly(0)">|◀開始局面</button>
-          <button onclick="step(-1)">◀1手戻る</button>
-          <button onclick="step(1)">1手進む▶</button>
-          <button onclick="goPly(LAST)">最終手▶|</button>
+          <button onclick="goPly(0)" aria-label="開始局面へ">|◀</button>
+          <button onclick="step(-1)" aria-label="1手戻る">◀</button>
+          <button onclick="step(1)" aria-label="1手進む">▶</button>
+          <button onclick="goPly(LAST)" aria-label="最終手へ">▶|</button>
+        </div>
+        <div class="quick-quiz">
+          <div class="side-pick quick-side-pick">
+            <button data-side="b" onclick="pickSide('b')">▲先手</button>
+            <button data-side="w" onclick="pickSide('w')">△後手</button>
+            <button data-side="both" onclick="pickSide('both')">両方</button>
+          </div>
+          <button class="gold" style="width:100%" onclick="startQuiz()">ここから開始</button>
         </div>
       </div>
       <div class="side-panel">
         <div class="status-box" id="positionStatus">棋譜を読み込むと情報が表示されます。</div>
-        <button class="blue" onclick="saveCurrentGameOnly()">この棋譜をライブラリに保存</button>
       </div>
     </div>
   </section>
@@ -124,6 +185,10 @@ body.quiz-on .board-layout{grid-template-columns:minmax(300px,360px) 1fr;}body.q
 
   <section class="quiz-panel hidden" id="quizPanel"></section>
   <section class="card hidden" id="scoreCard"></section>
+  <section class="card hidden" id="bottomSaveCard">
+    <button class="blue" style="width:100%" onclick="saveCurrentGameOnly()">この棋譜をライブラリに保存</button>
+    <button class="ghost" style="width:100%;margin-top:7px" onclick="showLoadPanel()">別の棋譜を読み込む</button>
+  </section>
 </main>
 
 <main id="view-lib" class="hidden">
@@ -148,7 +213,7 @@ body.quiz-on .board-layout{grid-template-columns:minmax(300px,360px) 1fr;}body.q
     <h2>使い方</h2>
     <p class="small">1.KIF棋譜を読み込む。2.戦型が見えるところまで手を進める。3.先手、後手、両方から予想対象を選ぶ。4.「ここから次の一手予想を開始」を押す。5.考えてから「答えを見る」を押し、プロの実戦手と一致したかを記録する。</p>
     <h3>記録の意味</h3>
-    <div class="note">このアプリの数値は「プロ着手一致率」です。不一致でも別の有力手の場合があります。疑わしい局面は「保留」にしてメモを残してください。</div>
+    <div class="note">このアプリの数値は「プロ着手一致率」です。不一致でも別の有力手の場合があります。気になる局面はタグやメモで残してください。</div>
     <h3>対応範囲</h3>
     <p class="small">通常の平手KIFを想定しています。駒落ち、局面図から始まる棋譜、詰将棋形式、複雑な変化手順は未対応です。KIF表記の「金右」「銀引」「角不成」などは読み取るようにしています。</p>
   </section>
@@ -158,7 +223,7 @@ body.quiz-on .board-layout{grid-template-columns:minmax(300px,360px) 1fr;}body.q
 
 <script>
 "use strict";
-const APP_VERSION="0.2.0";
+const APP_VERSION="0.3.0";
 const DB_KEY="shogiKifuQuizTrainerGpt.v1";
 const FW={"０":0,"１":1,"２":2,"３":3,"４":4,"５":5,"６":6,"７":7,"８":8,"９":9,"0":0,"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9};
 const KAN={"一":1,"二":2,"三":3,"四":4,"五":5,"六":6,"七":7,"八":8,"九":9};
@@ -169,8 +234,8 @@ const PROM_DISP={"歩":"と","香":"杏","桂":"圭","銀":"全","角":"馬","�
 const HAND_ORDER=["飛","角","金","銀","桂","香","歩"];
 const TERMINATORS=["投了","中断","千日手","持将棋","詰み","詰","切れ負け","反則勝ち","反則負け","入玉勝ち","不戦勝","不戦敗","時間切れ","封じ手"];
 const TAGS=["難しい手","ケアレスミス","あとで復習","絶対に覚えたい","序盤","中盤","終盤","手筋","受け","寄せ","形勢判断","定跡"];
-const SENKEI=["居飛車","振り飛車","対抗形","相振り飛車","角換わり","相掛かり","横歩取り","矢倉","雁木","四間飛車","三間飛車","中飛車","向かい飛車","右玉"];
-const KAKOI=["矢倉囲い","美濃囲い","高美濃","銀冠","穴熊","船囲い","左美濃","elmo囲い","中住まい","金無双","カニ囲い","雁木囲い"];
+const SENKEI=["矢倉","相掛かり棒銀","相掛かり腰掛け銀","相掛かり早繰り銀","相掛かりその他","角換わり棒銀","角換わり腰掛け銀","角換わり早繰り銀","角換わりその他","横歩取り","居飛車穴熊","へなちょこ急戦","船囲い急戦","右玉","右四間飛車","棒銀","腰掛け銀","早繰り銀","嬉野流","居飛車その他","ゴキゲン中飛車","中飛車","四間飛車","三間飛車","向かい飛車","相振り飛車","角交換振り飛車","振り飛車その他","奇襲戦法","その他"];
+const KAKOI=["左美濃","アヒル囲い","矢倉","カニ囲い","雁木","中住まい","船囲い","箱入り娘","対振り穴熊","ミレニアム","Elmo","美濃","穴熊","右矢倉","銀冠","その他"];
 const $=id=>document.getElementById(id);
 let LAST=0;
 let G={meta:{},moves:[],positions:[],cur:0,kifText:"",libId:null,side:"b",title:"",reviewPlys:null,reviewLabel:""};
@@ -183,6 +248,7 @@ function simpleHash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCod
 function fmtDate(d){return (d||"").slice(0,10).replace(/-/g,"/");}
 function fmtMs(ms){const s=Math.max(0,Math.floor((ms||0)/1000));return Math.floor(s/60)+"分"+String(s%60).padStart(2,"0")+"秒";}
 function switchTab(tab){["study","lib","help"].forEach(x=>{$("view-"+x).classList.toggle("hidden",x!==tab);$("tab-"+x).classList.toggle("on",x===tab);});if(tab==="lib")renderLibrary();}
+function showLoadPanel(){$("loadCard")?.classList.remove("hidden");requestAnimationFrame(()=>$("loadCard").scrollIntoView({behavior:"smooth",block:"start"}));}
 function loadDb(){try{const db=JSON.parse(localStorage.getItem(DB_KEY)||"{}");if(!db.games)db.games=[];return db;}catch(e){return {games:[]};}}
 function saveDb(db){localStorage.setItem(DB_KEY,JSON.stringify(db));}
 function stripClock(text){let s=text.trim();s=s.replace(/\s+\(\s*\d+:\d+(?::\d+)?\s*\/\s*\d+:\d+(?::\d+)?\s*\)\s*$/," ").trim();s=s.replace(/\s+\(\s*\d+:\d+(?::\d+)?\s*\)\s*$/," ").trim();return s;}
@@ -196,7 +262,7 @@ function applyMove(pos,move){const np=clone(pos);np.last=null;if(move.drop){cons
 function buildPositions(moves){const arr=[initialPosition()];for(let i=0;i<moves.length;i++)arr.push(applyMove(arr[i],moves[i]));return arr;}
 function moveJP(m){const mark=m.color==="b"?"▲":"△";const name=m.wasPromoted?PROM_NAME[m.base]||m.base:m.base;let s=mark+(m.same?"同":FWO[m.to.file]+KANO[m.to.rank])+name+(m.qualifier||"");if(m.promotes)s+="成";if(m.unpromote)s+="不成";if(m.drop)s+="打";return s;}
 function gameTitle(meta){return meta["表題"]||meta["棋戦"]||((meta["先手"]||meta["下手"]||"先手")+" 対 "+(meta["後手"]||meta["上手"]||"後手"));}
-function loadKif(text,opts={}){let parsed;try{parsed=parseKif(text);}catch(e){toast("棋譜の解析に失敗しました");return false;}if(!parsed.moves.length){toast("指し手が見つかりませんでした");return false;}let positions;try{positions=buildPositions(parsed.moves);}catch(e){toast("盤面の再現に失敗しました："+e.message);return false;}G={meta:parsed.meta,moves:parsed.moves,positions,cur:opts.cur||0,kifText:text,libId:opts.libId||null,side:opts.side||G.side||"b",title:gameTitle(parsed.meta),reviewPlys:opts.reviewPlys||null,reviewLabel:opts.reviewLabel||""};LAST=G.moves.length;Q.active=false;document.body.classList.remove("quiz-on");$("boardCard").classList.remove("hidden");$("quizSetup").classList.remove("hidden");$("quizPanel").classList.add("hidden");$("scoreCard").classList.add("hidden");renderMeta();renderBoard();renderControls();pickSide(G.side);const teai=G.meta["手合割"]||"平手";if(teai.indexOf("平手")<0)toast("注意：平手以外は正しく表示できない場合があります");else toast("棋譜を読み込みました（"+LAST+"手）");return true;}
+function loadKif(text,opts={}){let parsed;try{parsed=parseKif(text);}catch(e){toast("棋譜の解析に失敗しました");return false;}if(!parsed.moves.length){toast("指し手が見つかりませんでした");return false;}let positions;try{positions=buildPositions(parsed.moves);}catch(e){toast("盤面の再現に失敗しました："+e.message);return false;}G={meta:parsed.meta,moves:parsed.moves,positions,cur:opts.cur||0,kifText:text,libId:opts.libId||null,side:opts.side||G.side||"b",title:gameTitle(parsed.meta),reviewPlys:opts.reviewPlys||null,reviewLabel:opts.reviewLabel||""};LAST=G.moves.length;Q.active=false;document.body.classList.remove("quiz-on");$("boardCard").classList.remove("hidden");$("quizSetup").classList.remove("hidden");$("quizPanel").classList.add("hidden");$("scoreCard").classList.add("hidden");$("bottomSaveCard")?.classList.remove("hidden");$("loadCard")?.classList.add("hidden");renderMeta();renderBoard();renderControls();pickSide(G.side);requestAnimationFrame(()=>$("boardCard").scrollIntoView({behavior:"auto",block:"start"}));const teai=G.meta["手合割"]||"平手";if(teai.indexOf("平手")<0)toast("注意：平手以外は正しく表示できない場合があります");else toast("棋譜を読み込みました（"+LAST+"手）");return true;}
 function loadFromText(){const text=$("kifText").value.trim();if(!text){toast("棋譜を貼り付けてください");return;}loadKif(text);}
 $("fileInput").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const buf=rd.result;let text="";try{text=new TextDecoder("utf-8",{fatal:true}).decode(buf);}catch(err){try{text=new TextDecoder("shift_jis").decode(buf);}catch(e2){text=new TextDecoder("utf-8").decode(buf);}}$("kifText").value=text;loadKif(text);};rd.readAsArrayBuffer(f);});
 function insertSample(){const s=`手合割：平手
@@ -227,24 +293,51 @@ function renderPositionStatus(){const next=G.moves[G.cur];const side=next?(next.
 function renderControls(){const disabled=Q.active;$("navRow").querySelectorAll("button").forEach(b=>b.disabled=disabled);}
 function goPly(n){if(Q.active)return;G.cur=Math.max(0,Math.min(LAST,n));renderBoard();}
 function step(d){goPly(G.cur+d);}
-function pickSide(s){G.side=s;document.querySelectorAll("#sidePick button").forEach(b=>b.classList.toggle("on",b.dataset.side===s));}
+function pickSide(s){G.side=s;document.querySelectorAll("[data-side]").forEach(b=>b.classList.toggle("on",b.dataset.side===s));}
 function isTargetPly(ply){const m=G.moves[ply-1];if(!m)return false;if(G.reviewPlys&& !G.reviewPlys.includes(ply))return false;if(G.side!=="both"&&G.side!==m.color)return false;return true;}
 function countPlannedTargets(start){let n=0;for(let p=start+1;p<=LAST;p++)if(isTargetPly(p))n++;return n;}
 function startQuiz(){if(!G.moves.length){toast("棋譜を読み込んでください");return;}if(!G.side){toast("予想するサイドを選んでください");return;}if(G.cur>=LAST){toast("最終手の手前で開始してください");return;}const planned=countPlannedTargets(G.cur);if(!planned){toast("この条件では出題対象がありません");return;}Q={active:true,startPly:G.cur,target:G.cur,records:[],phase:"think",thinkStart:0,timerId:null,side:G.side,reviewPlys:G.reviewPlys||null,sessionStart:Date.now(),judgement:null,thinkMs:0};$("quizSetup").classList.add("hidden");$("scoreCard").classList.add("hidden");$("quizPanel").classList.remove("hidden");document.body.classList.add("quiz-on");renderControls();quizStep();}
 function quizStep(){const target=G.cur+1;if(target>LAST){finishQuiz();return;}if(!isTargetPly(target)){G.cur=target;renderBoard();quizStep();return;}Q.target=target;Q.phase="think";Q.judgement=null;Q.thinkStart=Date.now();startTimer();renderThink();}
+function scrollForQuiz(){if(!Q.active)return;requestAnimationFrame(()=>window.scrollTo({top:0,behavior:"auto"}));}
 function startTimer(){stopTimer();Q.timerId=setInterval(()=>{const el=$("qTimer");if(!el)return;const s=Math.floor((Date.now()-Q.thinkStart)/1000);el.textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");},250);}
 function stopTimer(){if(Q.timerId){clearInterval(Q.timerId);Q.timerId=null;}}
-function renderThink(){const m=G.moves[Q.target-1];const turn=m.color==="b"?"▲先手":"△後手";const solved=Q.records.length;const planned=countPlannedTargets(Q.startPly);const prev=G.cur>0?moveJP(G.moves[G.cur-1]):"開始局面";$("quizPanel").innerHTML="<div class='turn'>"+turn+"番：次の一手は？</div>"+"<div class='small'>"+Q.target+"手目　"+(solved+1)+"問目/"+planned+"問　直前の手："+esc(prev)+"　<span class='timer' id='qTimer'>0:00</span></div>"+"<div class='field' style='margin-top:8px;text-align:left'><label>自分の予想手（任意）</label><input type='text' id='predictedMove' placeholder='例：▲２四歩、読み筋、方針など'></div>"+"<button class='primary' style='width:100%' onclick='revealMove()'>答えを見る</button>"+"<button class='ghost' style='width:100%;margin-top:6px;border-color:var(--danger);color:var(--danger)' onclick='finishQuiz()'>途中終了して成績を見る</button>";}
+function renderThink(){const m=G.moves[Q.target-1];const turn=m.color==="b"?"▲先手":"△後手";const solved=Q.records.length;const planned=countPlannedTargets(Q.startPly);const prev=G.cur>0?moveJP(G.moves[G.cur-1]):"開始局面";$("quizPanel").innerHTML="<div class='turn'>"+turn+"番：次の一手</div>"+"<div class='small quiz-info'>"+Q.target+"手目　"+(solved+1)+"/"+planned+"問　直前："+esc(prev)+"　<span class='timer' id='qTimer'>0:00</span></div>"+"<button class='primary answer-btn' onclick='revealMove()'>答えを見る</button>"+"<button class='ghost quit-btn' onclick='finishQuiz()'>終了</button>";scrollForQuiz();}
 function revealMove(){stopTimer();Q.thinkMs=Date.now()-Q.thinkStart;Q.predictedMove=($("predictedMove")?.value||"").trim();G.cur=Q.target;renderBoard();Q.phase="record";renderRecord();}
-function renderRecord(){const m=G.moves[Q.target-1];const comment=m.comment?"<div class='note'><b>棋譜コメント</b><br>"+esc(m.comment).replace(/\n/g,"<br>")+"</div>":"";$("quizPanel").innerHTML="<div class='small'>"+Q.target+"手目の実戦手</div><div class='answer-move'>"+esc(moveJP(m))+"</div>"+"<div class='small'>思考時間："+fmtMs(Q.thinkMs)+"</div>"+comment+"<div class='field' style='text-align:left'><label>自分の予想手</label><input type='text' id='predictedMove2' value='"+escAttr(Q.predictedMove||"")+"' placeholder='未入力でも保存できます'></div>"+"<div class='judge-row'><button id='judgeMatch' onclick='selectJudge(\"match\")'>○一致</button><button id='judgeMiss' onclick='selectJudge(\"miss\")'>×不一致</button><button id='judgeHold' onclick='selectJudge(\"hold\")'>保留</button></div>"+"<div class='chips'>"+TAGS.map(t=>"<button class='chip' data-tag='"+escAttr(t)+"' onclick='toggleChip(this)'>"+esc(t)+"</button>").join("")+"</div>"+"<div class='field' style='text-align:left'><label>メモ</label><textarea id='recordNote' rows='3' placeholder='外した理由、読み筋、次に見る観点など'></textarea></div>"+"<button class='primary' style='width:100%' onclick='saveRecordAndNext()'>記録して次へ</button>";}
-function selectJudge(v){Q.judgement=v;[["judgeMatch","match"],["judgeMiss","miss"],["judgeHold","hold"]].forEach(([id,val])=>{$(id).className=v===val?"sel-"+val:"";});}
+function renderRecord(){
+  const m=G.moves[Q.target-1];
+  const comment=m.comment?`<div class="note compact-note"><b>棋譜コメント</b><br>${esc(m.comment).replace(/\n/g,"<br>")}</div>`:"";
+  $("quizPanel").innerHTML=
+    `<div class="small">${Q.target}手目の実戦手　思考時間：${fmtMs(Q.thinkMs)}</div>`+
+    `<div class="answer-move">${esc(moveJP(m))}</div>`+
+    `<div class="judge-row record-buttons"><button id="judgeMatch" onclick="selectJudge('match')">○</button><button id="judgeMiss" onclick="selectJudge('miss')">×</button><button id="nextBtn" class="primary" onclick="saveRecordAndNext()">次へ</button></div>`+
+    comment+
+    `<div class="field compact-field" style="text-align:left"><label>自分の予想手・メモ</label><input type="text" id="predictedMove2" value="${escAttr(Q.predictedMove||"")}" placeholder="予想手や短いメモ"></div>`+
+    `<div class="chips compact-chips">${TAGS.map(t=>`<button class="chip" data-tag="${escAttr(t)}" onclick="toggleChip(this)">${esc(t)}</button>`).join("")}</div>`+
+    `<div class="field compact-field detail-note" style="text-align:left"><textarea id="recordNote" rows="2" placeholder="詳しいメモ"></textarea></div>`;
+  scrollForQuiz();
+}
+function selectJudge(v){Q.judgement=v;[["judgeMatch","match"],["judgeMiss","miss"]].forEach(([id,val])=>{$(id).className=v===val?"sel-"+val:"";});}
 function toggleChip(btn){btn.classList.toggle("on");}
-function saveRecordAndNext(){if(!Q.judgement){toast("○、×、保留のいずれかを選んでください");return;}const tags=[...document.querySelectorAll(".chip.on")].map(b=>b.dataset.tag);const m=G.moves[Q.target-1];Q.records.push({ply:Q.target,side:m.color,actualMove:moveJP(m),rawMove:m.rawText||"",predictedMove:($("predictedMove2").value||"").trim(),judgement:Q.judgement,tags,note:($("recordNote").value||"").trim(),thinkMs:Q.thinkMs,createdAt:new Date().toISOString()});quizStep();}
-function calcScore(records){const graded=records.filter(r=>r.judgement!=="hold");const hit=graded.filter(r=>r.judgement==="match").length;const miss=graded.filter(r=>r.judgement==="miss").length;const hold=records.filter(r=>r.judgement==="hold").length;const rate=graded.length?Math.round(hit/graded.length*1000)/10:0;const totalMs=records.reduce((s,r)=>s+(r.thinkMs||0),0);return {n:records.length,graded:graded.length,hit,miss,hold,rate,totalMs};}
+function saveRecordAndNext(){if(!Q.judgement){toast("○か×を選んでください");return;}const tags=[...document.querySelectorAll(".chip.on")].map(b=>b.dataset.tag);const m=G.moves[Q.target-1];Q.records.push({ply:Q.target,side:m.color,actualMove:moveJP(m),rawMove:m.rawText||"",predictedMove:($("predictedMove2").value||"").trim(),judgement:Q.judgement,tags,note:($("recordNote").value||"").trim(),thinkMs:Q.thinkMs,createdAt:new Date().toISOString()});quizStep();}
+function calcScore(records){const hit=records.filter(r=>r.judgement==="match").length;const miss=records.filter(r=>r.judgement==="miss").length;const rate=records.length?Math.round(hit/records.length*1000)/10:0;const totalMs=records.reduce((s,r)=>s+(r.thinkMs||0),0);return {n:records.length,graded:records.length,hit,miss,rate,totalMs};}
 function finishQuiz(){stopTimer();Q.active=false;document.body.classList.remove("quiz-on");renderControls();$("quizPanel").classList.add("hidden");const score=calcScore(Q.records);Q.lastSession={id:uid(),gameHash:simpleHash(G.kifText),side:G.side,startPly:Q.startPly,endPly:G.cur,reviewPlys:G.reviewPlys||null,reviewLabel:G.reviewLabel||"",startedAt:new Date(Q.sessionStart||Date.now()).toISOString(),endedAt:new Date().toISOString(),records:Q.records,score};renderScore(Q.lastSession);$("scoreCard").classList.remove("hidden");$("scoreCard").scrollIntoView({behavior:"smooth",block:"start"});}
-function judgementMark(j){return j==="match"?"○":j==="miss"?"×":"保";}
-function renderScore(session){const s=session.score;let rows=session.records.map(r=>"<tr><td>"+r.ply+"</td><td>"+esc(r.actualMove)+"</td><td class='left'>"+esc(r.predictedMove||"")+"</td><td class='mk "+r.judgement+"' onclick='cycleJudgement("+r.ply+")'>"+judgementMark(r.judgement)+"</td><td>"+(r.tags.length?esc(r.tags.join("・")):"-")+"</td><td class='left'>"+esc(r.note).replace(/\n/g,"<br>")+"</td></tr>").join("");if(!rows)rows="<tr><td colspan='6'>記録がありません。</td></tr>";$("scoreCard").innerHTML="<h2>成績</h2>"+"<div class='small'>予想サイド："+({b:"▲先手",w:"△後手",both:"両方"}[session.side])+"　開始："+session.startPly+"手目　"+(session.reviewPlys?"復習対象のみ":"全対象")+"</div>"+"<div class='score-big'><div><div class='v'>"+s.rate+"%</div><div class='l'>プロ着手一致率</div></div><div><div class='v'>"+s.hit+"/"+s.graded+"</div><div class='l'>一致/判定対象</div></div><div><div class='v'>"+s.hold+"</div><div class='l'>保留</div></div><div><div class='v'>"+fmtMs(s.totalMs)+"</div><div class='l'>合計思考時間</div></div></div>"+"<div class='note'>表の○、×、保留はタップで変更できます。保留は一致率の分母から外します。</div>"+"<table><thead><tr><th>手数</th><th>実戦手</th><th>予想手</th><th>判定</th><th>タグ</th><th>メモ</th></tr></thead><tbody>"+rows+"</tbody></table>"+"<div class='row2' style='margin-top:10px'><button class='gold' onclick='openSaveDialog()'>この成績をライブラリに記録</button><button class='ghost' onclick='exportSessionCsv()'>この成績をCSVで書き出す</button></div>"+"<button class='ghost' style='width:100%;margin-top:7px' onclick='restartSameKifu()'>同じ棋譜をもう一度並べる</button>";}
-function cycleJudgement(ply){const r=Q.lastSession.records.find(x=>x.ply===ply);if(!r)return;r.judgement=r.judgement==="match"?"miss":r.judgement==="miss"?"hold":"match";Q.lastSession.score=calcScore(Q.lastSession.records);renderScore(Q.lastSession);}
+function judgementMark(j){return j==="match"?"○":"×";}
+function renderScore(session){
+  const s=session.score;
+  let rows=session.records.map(r=>
+    `<tr><td>${r.ply}</td><td>${esc(r.actualMove)}</td><td class="left">${esc(r.predictedMove||"")}</td><td class="mk ${r.judgement}" onclick="cycleJudgement(${r.ply})">${judgementMark(r.judgement)}</td><td>${r.tags.length?esc(r.tags.join("・")):"-"}</td><td class="left">${esc(r.note).replace(/\n/g,"<br>")}</td></tr>`
+  ).join("");
+  if(!rows)rows="<tr><td colspan='6'>記録がありません。</td></tr>";
+  $("scoreCard").innerHTML=
+    `<h2>成績</h2>`+
+    `<div class="small">予想サイド：${({b:"▲先手",w:"△後手",both:"両方"}[session.side])}　開始：${session.startPly}手目　${session.reviewPlys?"復習対象のみ":"全対象"}</div>`+
+    `<div class="score-big score-three"><div><div class="v">${s.rate}%</div><div class="l">プロ着手一致率</div></div><div><div class="v">${s.hit}/${s.graded}</div><div class="l">一致/出題</div></div><div><div class="v">${fmtMs(s.totalMs)}</div><div class="l">合計思考時間</div></div></div>`+
+    `<div class="note">表の○、×はタップで変更できます。気になる局面はタグやメモを確認してください。</div>`+
+    `<table><thead><tr><th>手数</th><th>実戦手</th><th>予想手</th><th>判定</th><th>タグ</th><th>メモ</th></tr></thead><tbody>${rows}</tbody></table>`+
+    `<button class="ghost" style="width:100%;margin-top:10px" onclick="restartSameKifu()">同じ棋譜をもう一度並べる</button>`+
+    `<div class="row2" style="margin-top:10px"><button class="gold" onclick="openSaveDialog()">この成績をライブラリに記録</button><button class="ghost" onclick="exportSessionCsv()">この成績をCSVで書き出す</button></div>`;
+}
+function cycleJudgement(ply){const r=Q.lastSession.records.find(x=>x.ply===ply);if(!r)return;r.judgement=r.judgement==="match"?"miss":"match";Q.lastSession.score=calcScore(Q.lastSession.records);renderScore(Q.lastSession);}
 function restartSameKifu(){G.cur=0;G.reviewPlys=null;G.reviewLabel="";Q.active=false;$("scoreCard").classList.add("hidden");$("quizSetup").classList.remove("hidden");renderBoard();renderControls();$("boardCard").scrollIntoView({behavior:"smooth",block:"start"});}
 function splitTags(s){return String(s||"").split(/[・,、\/]+/).map(x=>x.trim()).filter(Boolean);}
 function chipField(id,label,value,presets){return "<div class='field'><label>"+label+"</label><input type='text' id='"+id+"' value='"+escAttr(value||"")+"' oninput='syncPreset(\""+id+"\")' placeholder='複数入力可'>"+"<div class='chips' id='ps-"+id+"'>"+presets.map(p=>"<button type='button' class='chip soft' onclick='togglePreset(\""+id+"\",\""+escAttr(p)+"\")'>"+esc(p)+"</button>").join("")+"</div></div>";}
