@@ -62,8 +62,10 @@ body{padding:10px 8px 60px;}
 body.board-flipped .koma.gote{transform:none;}
 body.board-flipped .koma.sente{transform:rotate(180deg);}
 .koma.prom{color:#b00000!important;}
-.flip-btn{position:absolute;left:4px;top:4px;z-index:5;min-height:28px;height:28px;padding:0 8px;border-radius:15px;background:rgba(255,255,255,.9);font-size:.78rem;line-height:1;}
-body.quiz-on .flip-btn{height:24px;min-height:24px;padding:0 6px;font-size:.66rem;}
+.board-tools{width:100%;max-width:420px;margin:0 auto 3px;display:flex;justify-content:flex-end;}
+.flip-btn{min-height:28px;height:28px;padding:0 8px;border-radius:15px;background:#fff;font-size:.78rem;line-height:1;}
+body.quiz-on .board-tools{display:none!important;}
+.flip-inline{min-height:24px;height:24px;padding:0 8px;border-radius:13px;background:#fff;font-size:.68rem;line-height:1;margin-left:4px;vertical-align:middle;}
 .quiz-mini-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px;}
 .pause-card{background:#fff;border:1.5px dashed var(--gold);border-radius:10px;padding:8px;margin:8px 0;}
 .komadai{background:#fff;border:1.5px solid #111;border-radius:6px;min-height:30px;padding:3px 6px;}
@@ -144,11 +146,13 @@ body.quiz-on .quick-quiz{display:none!important;}
     <div class="meta-bar" id="metaBar"></div>
     <div class="board-layout">
       <div>
+        <div class="board-tools">
+          <button class="flip-btn" id="flipBtn" onclick="toggleBoardFlip()" aria-label="盤面を反転">反転</button>
+        </div>
         <div class="board-wrap">
           <div class="komadai gote" id="handGote"></div>
           <div class="coords" id="fileCoords"></div>
           <div class="board-frame">
-            <button class="flip-btn" id="flipBtn" onclick="toggleBoardFlip()" aria-label="盤面を反転">反転</button>
             <div class="board" id="board"></div>
             <div class="rank-coords" id="rankCoords"></div>
           </div>
@@ -232,7 +236,7 @@ body.quiz-on .quick-quiz{display:none!important;}
 
 <script>
 "use strict";
-const APP_VERSION="0.6.0";
+const APP_VERSION="0.6.1";
 const DB_KEY="shogiKifuQuizTrainerGpt.v1";
 const FW={"０":0,"１":1,"２":2,"３":3,"４":4,"５":5,"６":6,"７":7,"８":8,"９":9,"0":0,"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9};
 const KAN={"一":1,"二":2,"三":3,"四":4,"五":5,"六":6,"七":7,"八":8,"九":9};
@@ -326,8 +330,12 @@ function renderBoard(){
   $("lastMoveDisp").textContent=lm?"（"+G.cur+"手目）"+moveJP(lm):"開始局面";
   $("plyNum").textContent=G.cur;
   $("plyTotal").textContent=LAST;
-  $("flipBtn").textContent=G.flipped?"通常":"反転";
+  updateFlipButtonText();
   renderPositionStatus();
+}
+function updateFlipButtonText(){
+  const label=G.flipped?"通常":"反転";
+  ["flipBtn","flipBtnQuiz"].forEach(id=>{const el=$(id);if(el)el.textContent=label;});
 }
 function handHtml(pos,side){
   const h=pos.hands[side]||{};
@@ -363,13 +371,13 @@ function quizStep(){const target=G.cur+1;if(target>LAST){finishQuiz();return;}if
 function scrollForQuiz(){if(!Q.active)return;requestAnimationFrame(()=>window.scrollTo({top:0,behavior:"auto"}));}
 function startTimer(){stopTimer();Q.timerId=setInterval(()=>{const el=$("qTimer");if(!el)return;const s=Math.floor((Date.now()-Q.thinkStart)/1000);el.textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");},250);}
 function stopTimer(){if(Q.timerId){clearInterval(Q.timerId);Q.timerId=null;}}
-function renderThink(){const m=G.moves[Q.target-1];const turn=m.color==="b"?"▲先手":"△後手";const solved=Q.records.length;const planned=countPlannedTargets(Q.startPly);const prev=G.cur>0?moveJP(G.moves[G.cur-1]):"開始局面";$("quizPanel").innerHTML="<div class='turn'>"+turn+"番：次の一手</div>"+"<div class='small quiz-info'>"+Q.target+"手目　"+(solved+1)+"/"+planned+"問　直前："+esc(prev)+"　<span class='timer' id='qTimer'>0:00</span></div>"+"<button class='primary answer-btn' onclick='revealMove()'>答えを見る</button>"+"<div class='quiz-mini-row'><button class='ghost' onclick='pauseQuiz()'>一時停止</button><button class='ghost' onclick='finishQuiz()'>終了</button></div>";scrollForQuiz();}
+function renderThink(){const m=G.moves[Q.target-1];const turn=m.color==="b"?"▲先手":"△後手";const solved=Q.records.length;const planned=countPlannedTargets(Q.startPly);const prev=G.cur>0?moveJP(G.moves[G.cur-1]):"開始局面";$("quizPanel").innerHTML="<div class='turn'>"+turn+"番：次の一手</div>"+"<div class='small quiz-info'>"+Q.target+"手目　"+(solved+1)+"/"+planned+"問　直前："+esc(prev)+"　<span class='timer' id='qTimer'>0:00</span><button class='flip-inline' id='flipBtnQuiz' onclick='toggleBoardFlip()'>"+(G.flipped?"通常":"反転")+"</button></div>"+"<button class='primary answer-btn' onclick='revealMove()'>答えを見る</button>"+"<div class='quiz-mini-row'><button class='ghost' onclick='pauseQuiz()'>一時停止</button><button class='ghost' onclick='finishQuiz()'>終了</button></div>";scrollForQuiz();}
 function revealMove(){stopTimer();Q.thinkMs=Date.now()-Q.thinkStart;Q.predictedMove=($("predictedMove")?.value||"").trim();G.cur=Q.target;renderBoard();Q.phase="record";renderRecord();}
 function renderRecord(){
   const m=G.moves[Q.target-1];
   const comment=m.comment?`<div class="note compact-note"><b>棋譜コメント</b><br>${esc(m.comment).replace(/\n/g,"<br>")}</div>`:"";
   $("quizPanel").innerHTML=
-    `<div class="small">${Q.target}手目の実戦手　思考時間：${fmtMs(Q.thinkMs)}</div>`+
+    `<div class="small">${Q.target}手目の実戦手　思考時間：${fmtMs(Q.thinkMs)} <button class="flip-inline" id="flipBtnQuiz" onclick="toggleBoardFlip()">${G.flipped?"通常":"反転"}</button></div>`+
     `<div class="answer-move">${esc(moveJP(m))}</div>`+
     `<div class="judge-row record-buttons"><button id="judgeMatch" onclick="selectJudge('match')">○</button><button id="judgePartial" onclick="selectJudge('partial')">△</button><button id="judgeMiss" onclick="selectJudge('miss')">×</button><button id="nextBtn" class="primary" onclick="saveRecordAndNext()">次へ</button></div>`+
     `<button class="ghost quit-btn" onclick="pauseQuiz()">一時停止</button>`+
