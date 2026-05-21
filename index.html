@@ -57,8 +57,15 @@ body{padding:10px 8px 60px;}
 .cell{border:.5px solid #111;background:#fff;}
 .cell.hl{background:#ffe96a!important;}
 .koma{width:100%;height:100%;background:transparent!important;border:0!important;clip-path:none!important;box-shadow:none!important;color:#111;font-size:clamp(15px,5.1vw,25px);line-height:1;}
+.koma.sente{transform:none;}
 .koma.gote{transform:rotate(180deg);}
+body.board-flipped .koma.gote{transform:none;}
+body.board-flipped .koma.sente{transform:rotate(180deg);}
 .koma.prom{color:#b00000!important;}
+.flip-btn{position:absolute;left:4px;top:4px;z-index:5;min-height:28px;height:28px;padding:0 8px;border-radius:15px;background:rgba(255,255,255,.9);font-size:.78rem;line-height:1;}
+body.quiz-on .flip-btn{height:24px;min-height:24px;padding:0 6px;font-size:.66rem;}
+.quiz-mini-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px;}
+.pause-card{background:#fff;border:1.5px dashed var(--gold);border-radius:10px;padding:8px;margin:8px 0;}
 .komadai{background:#fff;border:1.5px solid #111;border-radius:6px;min-height:30px;padding:3px 6px;}
 .komadai .lab{color:#111;font-size:.68rem;}.hand-koma{background:transparent;border:0;padding:0 4px;color:#111;}
 .coords,.rank-coords{color:#111;}
@@ -112,7 +119,7 @@ body.quiz-on .quick-quiz{display:none!important;}
     <h1>将棋棋譜クイズトレーナー</h1>
     <div class="small">棋譜を隠して次の一手を考える学習用</div>
   </div>
-  <div class="ver">single HTML<br>GPT版0.3</div>
+  <div class="ver">single HTML<br>GPT版0.6</div>
 </header>
 
 <nav class="tabs">
@@ -125,7 +132,7 @@ body.quiz-on .quick-quiz{display:none!important;}
   <section class="card" id="loadCard">
     <h2>①棋譜を読み込む</h2>
     <div class="note">まずはKIF形式の棋譜を読み込みます。平手の本譜を対象にしています。変化手順は読み飛ばします。</div>
-    <div class="field"><label>KIFファイル</label><input type="file" id="fileInput" accept=".kif,.kifu,.txt"></div>
+    <div class="field"><label>KIFファイル</label><input type="file" id="fileInput"></div>
     <div class="field"><label>またはKIFテキストを貼り付け</label><textarea id="kifText" rows="6" placeholder="ここにKIF形式の棋譜を貼り付け"></textarea></div>
     <div class="row2">
       <button class="primary" onclick="loadFromText()">貼り付けた棋譜を読み込む</button>
@@ -141,6 +148,7 @@ body.quiz-on .quick-quiz{display:none!important;}
           <div class="komadai gote" id="handGote"></div>
           <div class="coords" id="fileCoords"></div>
           <div class="board-frame">
+            <button class="flip-btn" id="flipBtn" onclick="toggleBoardFlip()" aria-label="盤面を反転">反転</button>
             <div class="board" id="board"></div>
             <div class="rank-coords" id="rankCoords"></div>
           </div>
@@ -199,8 +207,9 @@ body.quiz-on .quick-quiz{display:none!important;}
       <input type="text" id="libSearch" placeholder="棋士名、棋戦名、戦型、囲い、メモで検索" oninput="renderLibrary()">
       <button class="ghost" onclick="renderLibrary()">更新</button>
     </div>
-    <div class="row2">
+    <div class="row3">
       <button class="ghost" onclick="exportDb()">バックアップを書き出す</button>
+      <button class="ghost" onclick="exportPauses()">一時停止を書き出す</button>
       <button class="ghost" onclick="document.getElementById('importInput').click()">バックアップを読み込む</button>
     </div>
     <input type="file" id="importInput" accept=".json" class="hidden">
@@ -223,7 +232,7 @@ body.quiz-on .quick-quiz{display:none!important;}
 
 <script>
 "use strict";
-const APP_VERSION="0.3.0";
+const APP_VERSION="0.6.0";
 const DB_KEY="shogiKifuQuizTrainerGpt.v1";
 const FW={"０":0,"１":1,"２":2,"３":3,"４":4,"５":5,"６":6,"７":7,"８":8,"９":9,"0":0,"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9};
 const KAN={"一":1,"二":2,"三":3,"四":4,"五":5,"六":6,"七":7,"八":8,"九":9};
@@ -238,8 +247,8 @@ const SENKEI=["矢倉","相掛かり棒銀","相掛かり腰掛け銀","相掛�
 const KAKOI=["左美濃","アヒル囲い","矢倉","カニ囲い","雁木","中住まい","船囲い","箱入り娘","対振り穴熊","ミレニアム","Elmo","美濃","穴熊","右矢倉","銀冠","その他"];
 const $=id=>document.getElementById(id);
 let LAST=0;
-let G={meta:{},moves:[],positions:[],cur:0,kifText:"",libId:null,side:"b",title:"",reviewPlys:null,reviewLabel:""};
-let Q={active:false,startPly:0,target:0,records:[],phase:"",thinkStart:0,timerId:null,side:"b",reviewPlys:null,sessionStart:0,judgement:null,thinkMs:0};
+let G={meta:{},moves:[],positions:[],cur:0,kifText:"",libId:null,side:"b",title:"",reviewPlys:null,reviewLabel:"",flipped:false};
+let Q={active:false,startPly:0,target:0,records:[],phase:"",thinkStart:0,timerId:null,side:"b",reviewPlys:null,sessionStart:0,judgement:null,thinkMs:0,pauseId:null,predictedMove:"",draftTags:[],draftNote:""};
 function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2300);}
 function esc(s){return String(s??"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
 function escAttr(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
@@ -249,7 +258,7 @@ function fmtDate(d){return (d||"").slice(0,10).replace(/-/g,"/");}
 function fmtMs(ms){const s=Math.max(0,Math.floor((ms||0)/1000));return Math.floor(s/60)+"分"+String(s%60).padStart(2,"0")+"秒";}
 function switchTab(tab){["study","lib","help"].forEach(x=>{$("view-"+x).classList.toggle("hidden",x!==tab);$("tab-"+x).classList.toggle("on",x===tab);});if(tab==="lib")renderLibrary();}
 function showLoadPanel(){$("loadCard")?.classList.remove("hidden");requestAnimationFrame(()=>$("loadCard").scrollIntoView({behavior:"smooth",block:"start"}));}
-function loadDb(){try{const db=JSON.parse(localStorage.getItem(DB_KEY)||"{}");if(!db.games)db.games=[];return db;}catch(e){return {games:[]};}}
+function loadDb(){try{const db=JSON.parse(localStorage.getItem(DB_KEY)||"{}");if(!db.games)db.games=[];if(!db.pauses)db.pauses=[];return db;}catch(e){return {games:[],pauses:[]};}}
 function saveDb(db){localStorage.setItem(DB_KEY,JSON.stringify(db));}
 function stripClock(text){let s=text.trim();s=s.replace(/\s+\(\s*\d+:\d+(?::\d+)?\s*\/\s*\d+:\d+(?::\d+)?\s*\)\s*$/," ").trim();s=s.replace(/\s+\(\s*\d+:\d+(?::\d+)?\s*\)\s*$/," ").trim();return s;}
 function parsePieceToken(s){const clean=s.replace(/[　\s]/g,"");const pieces=["成香","成桂","成銀","と","馬","龍","竜","歩","香","桂","銀","金","角","飛","玉","王"];for(const name of pieces){if(clean.startsWith(name)){const rest=clean.slice(name.length);if(rest && !/^[右左直上引寄]+$/.test(rest))continue;const map={"と":["歩",true],"成香":["香",true],"成桂":["桂",true],"成銀":["銀",true],"馬":["角",true],"龍":["飛",true],"竜":["飛",true],"歩":["歩",false],"香":["香",false],"桂":["桂",false],"銀":["銀",false],"金":["金",false],"角":["角",false],"飛":["飛",false],"玉":["玉",false],"王":["玉",false]};return {base:map[name][0],promoted:map[name][1],qualifier:rest};}}return null;}
@@ -262,7 +271,7 @@ function applyMove(pos,move){const np=clone(pos);np.last=null;if(move.drop){cons
 function buildPositions(moves){const arr=[initialPosition()];for(let i=0;i<moves.length;i++)arr.push(applyMove(arr[i],moves[i]));return arr;}
 function moveJP(m){const mark=m.color==="b"?"▲":"△";const name=m.wasPromoted?PROM_NAME[m.base]||m.base:m.base;let s=mark+(m.same?"同":FWO[m.to.file]+KANO[m.to.rank])+name+(m.qualifier||"");if(m.promotes)s+="成";if(m.unpromote)s+="不成";if(m.drop)s+="打";return s;}
 function gameTitle(meta){return meta["表題"]||meta["棋戦"]||((meta["先手"]||meta["下手"]||"先手")+" 対 "+(meta["後手"]||meta["上手"]||"後手"));}
-function loadKif(text,opts={}){let parsed;try{parsed=parseKif(text);}catch(e){toast("棋譜の解析に失敗しました");return false;}if(!parsed.moves.length){toast("指し手が見つかりませんでした");return false;}let positions;try{positions=buildPositions(parsed.moves);}catch(e){toast("盤面の再現に失敗しました："+e.message);return false;}G={meta:parsed.meta,moves:parsed.moves,positions,cur:opts.cur||0,kifText:text,libId:opts.libId||null,side:opts.side||G.side||"b",title:gameTitle(parsed.meta),reviewPlys:opts.reviewPlys||null,reviewLabel:opts.reviewLabel||""};LAST=G.moves.length;Q.active=false;document.body.classList.remove("quiz-on");$("boardCard").classList.remove("hidden");$("quizSetup").classList.remove("hidden");$("quizPanel").classList.add("hidden");$("scoreCard").classList.add("hidden");$("bottomSaveCard")?.classList.remove("hidden");$("loadCard")?.classList.add("hidden");renderMeta();renderBoard();renderControls();pickSide(G.side);requestAnimationFrame(()=>$("boardCard").scrollIntoView({behavior:"auto",block:"start"}));const teai=G.meta["手合割"]||"平手";if(teai.indexOf("平手")<0)toast("注意：平手以外は正しく表示できない場合があります");else toast("棋譜を読み込みました（"+LAST+"手）");return true;}
+function loadKif(text,opts={}){let parsed;try{parsed=parseKif(text);}catch(e){toast("棋譜の解析に失敗しました");return false;}if(!parsed.moves.length){toast("指し手が見つかりませんでした");return false;}let positions;try{positions=buildPositions(parsed.moves);}catch(e){toast("盤面の再現に失敗しました："+e.message);return false;}G={meta:parsed.meta,moves:parsed.moves,positions,cur:opts.cur||0,kifText:text,libId:opts.libId||null,side:opts.side||G.side||"b",title:gameTitle(parsed.meta),reviewPlys:opts.reviewPlys||null,reviewLabel:opts.reviewLabel||"",flipped:opts.flipped!==undefined?opts.flipped:G.flipped||false};LAST=G.moves.length;Q.active=false;document.body.classList.remove("quiz-on");$("boardCard").classList.remove("hidden");$("quizSetup").classList.remove("hidden");$("quizPanel").classList.add("hidden");$("scoreCard").classList.add("hidden");$("bottomSaveCard")?.classList.remove("hidden");$("loadCard")?.classList.add("hidden");renderMeta();renderBoard();renderControls();pickSide(G.side);requestAnimationFrame(()=>$("boardCard").scrollIntoView({behavior:"auto",block:"start"}));const teai=G.meta["手合割"]||"平手";if(teai.indexOf("平手")<0)toast("注意：平手以外は正しく表示できない場合があります");else toast("棋譜を読み込みました（"+LAST+"手）");return true;}
 function loadFromText(){const text=$("kifText").value.trim();if(!text){toast("棋譜を貼り付けてください");return;}loadKif(text);}
 $("fileInput").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{const buf=rd.result;let text="";try{text=new TextDecoder("utf-8",{fatal:true}).decode(buf);}catch(err){try{text=new TextDecoder("shift_jis").decode(buf);}catch(e2){text=new TextDecoder("utf-8").decode(buf);}}$("kifText").value=text;loadKif(text);};rd.readAsArrayBuffer(f);});
 function insertSample(){const s=`手合割：平手
@@ -286,9 +295,62 @@ function insertSample(){const s=`手合割：平手
 12 投了`;
 $("kifText").value=s;loadKif(s);}
 function renderMeta(){const m=G.meta,parts=[];if(m["棋戦"])parts.push("<span><b>棋戦</b> "+esc(m["棋戦"])+"</span>");if(m["開始日時"]||m["対局日"]||m["日付"])parts.push("<span><b>日付</b> "+esc(m["開始日時"]||m["対局日"]||m["日付"])+"</span>");if(m["先手"]||m["下手"])parts.push("<span><b>▲</b> "+esc(m["先手"]||m["下手"])+"</span>");if(m["後手"]||m["上手"])parts.push("<span><b>△</b> "+esc(m["後手"]||m["上手"])+"</span>");if(m["戦型"])parts.push("<span><b>戦型</b> "+esc(m["戦型"])+"</span>");$("metaBar").innerHTML=parts.join("")||"<span>棋譜情報なし</span>";}
-function renderBoard(){const pos=G.positions[G.cur];const board=$("board");board.innerHTML="";for(let r=1;r<=9;r++){for(let c=0;c<9;c++){const f=9-c;const cell=document.createElement("div");cell.className="cell";if(pos.last&&pos.last.file===f&&pos.last.rank===r)cell.classList.add("hl");const p=pos.board[r][f];if(p){const k=document.createElement("div");k.className="koma"+(p.owner==="w"?" gote":"")+(p.promoted?" prom":"");let ch=p.promoted?PROM_DISP[p.base]:p.base;if(p.base==="玉"&&p.owner==="w")ch="王";k.textContent=ch;cell.appendChild(k);}board.appendChild(cell);}}
-$("fileCoords").innerHTML=[9,8,7,6,5,4,3,2,1].map(n=>"<span>"+n+"</span>").join("");$("rankCoords").innerHTML=KANO.slice(1).map(k=>"<span>"+k+"</span>").join("");renderHands(pos);const lm=G.cur>0?G.moves[G.cur-1]:null;$("lastMoveDisp").textContent=lm?"（"+G.cur+"手目）"+moveJP(lm):"開始局面";$("plyNum").textContent=G.cur;$("plyTotal").textContent=LAST;renderPositionStatus();}
-function renderHands(pos){for(const side of ["w","b"]){const el=side==="b"?$("handSente"):$("handGote");const h=pos.hands[side]||{};let html="<span class='lab'>"+(side==="b"?"▲先手持駒":"△後手持駒")+"</span>";let any=false;for(const p of HAND_ORDER){const n=h[p]||0;if(n>0){any=true;html+="<span class='hand-koma'>"+p+(n>1?"<sup>"+n+"</sup>":"")+"</span>";}}if(!any)html+="<span class='lab'>なし</span>";el.innerHTML=html;}}
+function renderBoard(){
+  document.body.classList.toggle("board-flipped",!!G.flipped);
+  const pos=G.positions[G.cur];
+  const board=$("board");
+  board.innerHTML="";
+  const ranks=G.flipped?[9,8,7,6,5,4,3,2,1]:[1,2,3,4,5,6,7,8,9];
+  const files=G.flipped?[1,2,3,4,5,6,7,8,9]:[9,8,7,6,5,4,3,2,1];
+  for(const r of ranks){
+    for(const f of files){
+      const cell=document.createElement("div");
+      cell.className="cell";
+      if(pos.last&&pos.last.file===f&&pos.last.rank===r)cell.classList.add("hl");
+      const piece=pos.board[r][f];
+      if(piece){
+        const k=document.createElement("div");
+        k.className="koma "+(piece.owner==="w"?"gote":"sente")+(piece.promoted?" prom":"");
+        let ch=piece.promoted?PROM_DISP[piece.base]:piece.base;
+        if(piece.base==="玉"&&piece.owner==="w")ch="王";
+        k.textContent=ch;
+        cell.appendChild(k);
+      }
+      board.appendChild(cell);
+    }
+  }
+  $("fileCoords").innerHTML=files.map(n=>"<span>"+n+"</span>").join("");
+  $("rankCoords").innerHTML=ranks.map(r=>"<span>"+KANO[r]+"</span>").join("");
+  renderHands(pos);
+  const lm=G.cur>0?G.moves[G.cur-1]:null;
+  $("lastMoveDisp").textContent=lm?"（"+G.cur+"手目）"+moveJP(lm):"開始局面";
+  $("plyNum").textContent=G.cur;
+  $("plyTotal").textContent=LAST;
+  $("flipBtn").textContent=G.flipped?"通常":"反転";
+  renderPositionStatus();
+}
+function handHtml(pos,side){
+  const h=pos.hands[side]||{};
+  let html="<span class='lab'>"+(side==="b"?"▲先手持駒":"△後手持駒")+"</span>";
+  let any=false;
+  for(const piece of HAND_ORDER){
+    const n=h[piece]||0;
+    if(n>0){any=true;html+="<span class='hand-koma'>"+piece+(n>1?"<sup>"+n+"</sup>":"")+"</span>";}
+  }
+  if(!any)html+="<span class='lab'>なし</span>";
+  return html;
+}
+function renderHands(pos){
+  const topSide=G.flipped?"b":"w";
+  const bottomSide=G.flipped?"w":"b";
+  $("handGote").innerHTML=handHtml(pos,topSide);
+  $("handSente").innerHTML=handHtml(pos,bottomSide);
+}
+function toggleBoardFlip(){
+  G.flipped=!G.flipped;
+  renderBoard();
+  toast(G.flipped?"後手側を下に表示します":"先手側を下に表示します");
+}
 function renderPositionStatus(){const next=G.moves[G.cur];const side=next?(next.color==="b"?"▲先手":"△後手"):"終局";$("positionStatus").innerHTML="<div><b>現在</b> "+G.cur+"手目/"+LAST+"手</div>"+"<div><b>次の手番</b> "+side+"</div>"+(next?"<div class='small'>次の手は、クイズ中は答えを見るまで表示しません。</div>":"<div class='small'>最終手まで進みました。</div>")+(G.reviewPlys?"<div class='note'>復習対象のみ："+G.reviewPlys.length+"問</div>":"");}
 function renderControls(){const disabled=Q.active;$("navRow").querySelectorAll("button").forEach(b=>b.disabled=disabled);}
 function goPly(n){if(Q.active)return;G.cur=Math.max(0,Math.min(LAST,n));renderBoard();}
@@ -296,12 +358,12 @@ function step(d){goPly(G.cur+d);}
 function pickSide(s){G.side=s;document.querySelectorAll("[data-side]").forEach(b=>b.classList.toggle("on",b.dataset.side===s));}
 function isTargetPly(ply){const m=G.moves[ply-1];if(!m)return false;if(G.reviewPlys&& !G.reviewPlys.includes(ply))return false;if(G.side!=="both"&&G.side!==m.color)return false;return true;}
 function countPlannedTargets(start){let n=0;for(let p=start+1;p<=LAST;p++)if(isTargetPly(p))n++;return n;}
-function startQuiz(){if(!G.moves.length){toast("棋譜を読み込んでください");return;}if(!G.side){toast("予想するサイドを選んでください");return;}if(G.cur>=LAST){toast("最終手の手前で開始してください");return;}const planned=countPlannedTargets(G.cur);if(!planned){toast("この条件では出題対象がありません");return;}Q={active:true,startPly:G.cur,target:G.cur,records:[],phase:"think",thinkStart:0,timerId:null,side:G.side,reviewPlys:G.reviewPlys||null,sessionStart:Date.now(),judgement:null,thinkMs:0};$("quizSetup").classList.add("hidden");$("scoreCard").classList.add("hidden");$("quizPanel").classList.remove("hidden");document.body.classList.add("quiz-on");renderControls();quizStep();}
-function quizStep(){const target=G.cur+1;if(target>LAST){finishQuiz();return;}if(!isTargetPly(target)){G.cur=target;renderBoard();quizStep();return;}Q.target=target;Q.phase="think";Q.judgement=null;Q.thinkStart=Date.now();startTimer();renderThink();}
+function startQuiz(){if(!G.moves.length){toast("棋譜を読み込んでください");return;}if(!G.side){toast("予想するサイドを選んでください");return;}if(G.cur>=LAST){toast("最終手の手前で開始してください");return;}const planned=countPlannedTargets(G.cur);if(!planned){toast("この条件では出題対象がありません");return;}Q={active:true,startPly:G.cur,target:G.cur,records:[],phase:"think",thinkStart:0,timerId:null,side:G.side,reviewPlys:G.reviewPlys||null,sessionStart:Date.now(),judgement:null,thinkMs:0,pauseId:null,predictedMove:"",draftTags:[],draftNote:""};$("quizSetup").classList.add("hidden");$("scoreCard").classList.add("hidden");$("quizPanel").classList.remove("hidden");document.body.classList.add("quiz-on");renderControls();quizStep();}
+function quizStep(){const target=G.cur+1;if(target>LAST){finishQuiz();return;}if(!isTargetPly(target)){G.cur=target;renderBoard();quizStep();return;}Q.target=target;Q.phase="think";Q.judgement=null;Q.predictedMove="";Q.draftTags=[];Q.draftNote="";Q.thinkStart=Date.now();startTimer();renderThink();}
 function scrollForQuiz(){if(!Q.active)return;requestAnimationFrame(()=>window.scrollTo({top:0,behavior:"auto"}));}
 function startTimer(){stopTimer();Q.timerId=setInterval(()=>{const el=$("qTimer");if(!el)return;const s=Math.floor((Date.now()-Q.thinkStart)/1000);el.textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0");},250);}
 function stopTimer(){if(Q.timerId){clearInterval(Q.timerId);Q.timerId=null;}}
-function renderThink(){const m=G.moves[Q.target-1];const turn=m.color==="b"?"▲先手":"△後手";const solved=Q.records.length;const planned=countPlannedTargets(Q.startPly);const prev=G.cur>0?moveJP(G.moves[G.cur-1]):"開始局面";$("quizPanel").innerHTML="<div class='turn'>"+turn+"番：次の一手</div>"+"<div class='small quiz-info'>"+Q.target+"手目　"+(solved+1)+"/"+planned+"問　直前："+esc(prev)+"　<span class='timer' id='qTimer'>0:00</span></div>"+"<button class='primary answer-btn' onclick='revealMove()'>答えを見る</button>"+"<button class='ghost quit-btn' onclick='finishQuiz()'>終了</button>";scrollForQuiz();}
+function renderThink(){const m=G.moves[Q.target-1];const turn=m.color==="b"?"▲先手":"△後手";const solved=Q.records.length;const planned=countPlannedTargets(Q.startPly);const prev=G.cur>0?moveJP(G.moves[G.cur-1]):"開始局面";$("quizPanel").innerHTML="<div class='turn'>"+turn+"番：次の一手</div>"+"<div class='small quiz-info'>"+Q.target+"手目　"+(solved+1)+"/"+planned+"問　直前："+esc(prev)+"　<span class='timer' id='qTimer'>0:00</span></div>"+"<button class='primary answer-btn' onclick='revealMove()'>答えを見る</button>"+"<div class='quiz-mini-row'><button class='ghost' onclick='pauseQuiz()'>一時停止</button><button class='ghost' onclick='finishQuiz()'>終了</button></div>";scrollForQuiz();}
 function revealMove(){stopTimer();Q.thinkMs=Date.now()-Q.thinkStart;Q.predictedMove=($("predictedMove")?.value||"").trim();G.cur=Q.target;renderBoard();Q.phase="record";renderRecord();}
 function renderRecord(){
   const m=G.moves[Q.target-1];
@@ -310,17 +372,127 @@ function renderRecord(){
     `<div class="small">${Q.target}手目の実戦手　思考時間：${fmtMs(Q.thinkMs)}</div>`+
     `<div class="answer-move">${esc(moveJP(m))}</div>`+
     `<div class="judge-row record-buttons"><button id="judgeMatch" onclick="selectJudge('match')">○</button><button id="judgePartial" onclick="selectJudge('partial')">△</button><button id="judgeMiss" onclick="selectJudge('miss')">×</button><button id="nextBtn" class="primary" onclick="saveRecordAndNext()">次へ</button></div>`+
+    `<button class="ghost quit-btn" onclick="pauseQuiz()">一時停止</button>`+
     comment+
     `<div class="field compact-field" style="text-align:left"><label>自分の予想手・メモ</label><input type="text" id="predictedMove2" value="${escAttr(Q.predictedMove||"")}" placeholder="予想手や短いメモ"></div>`+
     `<div class="chips compact-chips">${TAGS.map(t=>`<button class="chip" data-tag="${escAttr(t)}" onclick="toggleChip(this)">${esc(t)}</button>`).join("")}</div>`+
-    `<div class="field compact-field detail-note" style="text-align:left"><textarea id="recordNote" rows="2" placeholder="詳しいメモ"></textarea></div>`;
+    `<div class="field compact-field detail-note" style="text-align:left"><textarea id="recordNote" rows="2" placeholder="詳しいメモ">${esc(Q.draftNote||"")}</textarea></div>`;
+  if(Q.judgement)selectJudge(Q.judgement);
+  (Q.draftTags||[]).forEach(t=>document.querySelectorAll(".chip").forEach(b=>{if(b.dataset.tag===t)b.classList.add("on");}));
   scrollForQuiz();
 }
 function selectJudge(v){Q.judgement=v;[["judgeMatch","match"],["judgePartial","partial"],["judgeMiss","miss"]].forEach(([id,val])=>{$(id).className=v===val?"sel-"+val:"";});}
 function toggleChip(btn){btn.classList.toggle("on");}
-function saveRecordAndNext(){if(!Q.judgement){toast("○、△、×を選んでください");return;}const tags=[...document.querySelectorAll(".chip.on")].map(b=>b.dataset.tag);const m=G.moves[Q.target-1];Q.records.push({ply:Q.target,side:m.color,actualMove:moveJP(m),rawMove:m.rawText||"",predictedMove:($("predictedMove2").value||"").trim(),judgement:Q.judgement,tags,note:($("recordNote").value||"").trim(),thinkMs:Q.thinkMs,createdAt:new Date().toISOString()});quizStep();}
+function saveRecordAndNext(){if(!Q.judgement){toast("○、△、×を選んでください");return;}const tags=[...document.querySelectorAll(".chip.on")].map(b=>b.dataset.tag);const m=G.moves[Q.target-1];Q.records.push({ply:Q.target,side:m.color,actualMove:moveJP(m),rawMove:m.rawText||"",predictedMove:($("predictedMove2").value||"").trim(),judgement:Q.judgement,tags,note:($("recordNote").value||"").trim(),thinkMs:Q.thinkMs,createdAt:new Date().toISOString()});Q.predictedMove="";Q.draftTags=[];Q.draftNote="";quizStep();}
+function captureRecordDraft(){
+  if(Q.phase!=="record")return;
+  Q.predictedMove=($("predictedMove2")?.value||Q.predictedMove||"").trim();
+  Q.draftTags=[...document.querySelectorAll(".chip.on")].map(b=>b.dataset.tag);
+  Q.draftNote=($("recordNote")?.value||Q.draftNote||"").trim();
+}
+function makePauseData(){
+  captureRecordDraft();
+  const thinkElapsedMs=Q.phase==="think"?Math.max(0,Date.now()-Q.thinkStart):0;
+  return {
+    id:Q.pauseId||uid(),
+    gameHash:simpleHash(G.kifText),
+    title:G.title,
+    meta:G.meta,
+    kifText:G.kifText,
+    libId:G.libId,
+    cur:G.cur,
+    side:G.side,
+    flipped:!!G.flipped,
+    reviewPlys:G.reviewPlys||null,
+    reviewLabel:G.reviewLabel||"",
+    q:{
+      startPly:Q.startPly,
+      target:Q.target,
+      records:Q.records,
+      phase:Q.phase,
+      thinkElapsedMs,
+      thinkMs:Q.thinkMs||0,
+      sessionStart:Q.sessionStart||Date.now(),
+      judgement:Q.judgement||null,
+      predictedMove:Q.predictedMove||"",
+      draftTags:Q.draftTags||[],
+      draftNote:Q.draftNote||""
+    },
+    pausedAt:new Date().toISOString(),
+    version:APP_VERSION
+  };
+}
+function upsertPause(pause){
+  const db=loadDb();
+  db.pauses=db.pauses||[];
+  const i=db.pauses.findIndex(p=>p.id===pause.id);
+  if(i>=0)db.pauses[i]=pause;else db.pauses.unshift(pause);
+  saveDb(db);
+  return pause.id;
+}
+function pauseQuiz(){
+  if(!Q.active){toast("一時停止するクイズがありません");return;}
+  stopTimer();
+  const pause=makePauseData();
+  Q.pauseId=upsertPause(pause);
+  Q.active=false;
+  document.body.classList.remove("quiz-on");
+  renderControls();
+  $("quizPanel").classList.remove("hidden");
+  $("quizPanel").innerHTML=`<div class="pause-card"><div class="turn">一時停止しました</div><div class="small">${esc(G.title)}　${pause.q.target}手目前後まで保存</div><div class="row2" style="margin-top:8px"><button class="primary" onclick="resumePause('${pause.id}')">再開</button><button class="ghost" onclick="switchTab('lib')">ライブラリで見る</button></div></div>`;
+  toast("一時停止データを保存しました");
+}
+function removePause(id){
+  if(!id)return;
+  const db=loadDb();
+  db.pauses=(db.pauses||[]).filter(p=>p.id!==id);
+  saveDb(db);
+}
+function resumePause(id){
+  const db=loadDb();
+  const pause=(db.pauses||[]).find(p=>p.id===id);
+  if(!pause){toast("一時停止データが見つかりません");return;}
+  switchTab("study");
+  const ok=loadKif(pause.kifText,{libId:pause.libId||null,cur:pause.cur||0,side:pause.side||"b",reviewPlys:pause.reviewPlys||null,reviewLabel:pause.reviewLabel||"",flipped:!!pause.flipped});
+  if(!ok)return;
+  Q={active:true,startPly:pause.q.startPly,target:pause.q.target,records:pause.q.records||[],phase:pause.q.phase||"think",thinkStart:0,timerId:null,side:pause.side||"b",reviewPlys:pause.reviewPlys||null,sessionStart:pause.q.sessionStart||Date.now(),judgement:pause.q.judgement||null,thinkMs:pause.q.thinkMs||0,pauseId:pause.id,predictedMove:pause.q.predictedMove||"",draftTags:pause.q.draftTags||[],draftNote:pause.q.draftNote||""};
+  $("quizSetup").classList.add("hidden");
+  $("scoreCard").classList.add("hidden");
+  $("quizPanel").classList.remove("hidden");
+  document.body.classList.add("quiz-on");
+  renderControls();
+  if(Q.phase==="record"){
+    G.cur=Q.target;
+    renderBoard();
+    renderRecord();
+  }else{
+    G.cur=Math.max(0,Q.target-1);
+    renderBoard();
+    Q.phase="think";
+    Q.thinkStart=Date.now()-(pause.q.thinkElapsedMs||0);
+    startTimer();
+    renderThink();
+  }
+  toast("一時停止データから再開しました");
+}
+function deletePause(id){
+  if(!confirm("この一時停止データを削除しますか？"))return;
+  removePause(id);
+  renderLibrary();
+  toast("一時停止データを削除しました");
+}
+function exportPauses(){
+  const db=loadDb();
+  const data=JSON.stringify({pauses:db.pauses||[],exportedAt:new Date().toISOString(),version:APP_VERSION},null,2);
+  const blob=new Blob([data],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="shogi-kifu-trainer-pauses-"+new Date().toISOString().slice(0,10)+".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 function calcScore(records){const hit=records.filter(r=>r.judgement==="match").length;const partial=records.filter(r=>r.judgement==="partial").length;const miss=records.filter(r=>r.judgement==="miss").length;const scoreValue=hit+partial*0.5;const rate=records.length?Math.round(scoreValue/records.length*1000)/10:0;const totalMs=records.reduce((s,r)=>s+(r.thinkMs||0),0);return {n:records.length,graded:records.length,hit,partial,miss,scoreValue,rate,totalMs};}
-function finishQuiz(){stopTimer();Q.active=false;document.body.classList.remove("quiz-on");renderControls();$("quizPanel").classList.add("hidden");const score=calcScore(Q.records);Q.lastSession={id:uid(),gameHash:simpleHash(G.kifText),side:G.side,startPly:Q.startPly,endPly:G.cur,reviewPlys:G.reviewPlys||null,reviewLabel:G.reviewLabel||"",startedAt:new Date(Q.sessionStart||Date.now()).toISOString(),endedAt:new Date().toISOString(),records:Q.records,score};renderScore(Q.lastSession);$("scoreCard").classList.remove("hidden");$("scoreCard").scrollIntoView({behavior:"smooth",block:"start"});}
+function finishQuiz(){stopTimer();const pauseId=Q.pauseId;Q.active=false;document.body.classList.remove("quiz-on");renderControls();$("quizPanel").classList.add("hidden");const score=calcScore(Q.records);Q.lastSession={id:uid(),gameHash:simpleHash(G.kifText),side:G.side,startPly:Q.startPly,endPly:G.cur,reviewPlys:G.reviewPlys||null,reviewLabel:G.reviewLabel||"",startedAt:new Date(Q.sessionStart||Date.now()).toISOString(),endedAt:new Date().toISOString(),records:Q.records,score};if(pauseId)removePause(pauseId);renderScore(Q.lastSession);$("scoreCard").classList.remove("hidden");$("scoreCard").scrollIntoView({behavior:"smooth",block:"start"});}
 function judgementMark(j){return j==="match"?"○":j==="partial"?"△":"×";}
 function formatScoreValue(s){const v=(s.scoreValue!==undefined)?s.scoreValue:s.hit;return Number.isInteger(v)?String(v):v.toFixed(1);}
 function renderScore(session){
@@ -348,12 +520,97 @@ function openSaveDialog(){if(!Q.lastSession){toast("保存する成績があり�
 function makeGameRecord(id){return {id:id||uid(),hash:simpleHash(G.kifText),title:G.title,meta:G.meta,kifText:G.kifText,tags:{senkei:G.meta["戦型"]||"",kakoiB:"",kakoiW:"",memo:""},sessions:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),version:APP_VERSION};}
 function confirmSaveSession(){const db=loadDb();let game=G.libId?db.games.find(g=>g.id===G.libId):db.games.find(g=>g.hash===simpleHash(G.kifText));if(!game){game=makeGameRecord();db.games.unshift(game);G.libId=game.id;}game.title=($("svTitle").value||game.title).trim();game.tags={senkei:$("svSenkei").value.trim(),kakoiB:$("svKakoiB").value.trim(),kakoiW:$("svKakoiW").value.trim(),memo:$("svMemo").value.trim()};game.meta=G.meta;game.kifText=G.kifText;game.hash=simpleHash(G.kifText);game.sessions.push(Q.lastSession);game.updatedAt=new Date().toISOString();saveDb(db);$("saveDlg").remove();toast("ライブラリに保存しました（"+game.sessions.length+"回目）");}
 function saveCurrentGameOnly(){if(!G.moves.length){toast("棋譜を読み込んでください");return;}const db=loadDb();let game=G.libId?db.games.find(g=>g.id===G.libId):db.games.find(g=>g.hash===simpleHash(G.kifText));if(game){G.libId=game.id;toast("すでにライブラリにあります");return;}game=makeGameRecord();db.games.unshift(game);G.libId=game.id;saveDb(db);toast("棋譜をライブラリに保存しました");}
-function renderLibrary(){const db=loadDb();const q=($("libSearch")?.value||"").trim().toLowerCase();let games=db.games||[];if(q){games=games.filter(g=>JSON.stringify([g.title,g.meta,g.tags]).toLowerCase().includes(q));}const list=$("libList");if(!games.length){list.innerHTML="<div class='note'>保存済みの棋譜がありません。</div>";return;}list.innerHTML=games.map(g=>{const md=g.meta||{};const players=(md["先手"]||md["下手"]||"先手")+" 対 "+(md["後手"]||md["上手"]||"後手");const tag=[g.tags?.senkei,g.tags?.kakoiB&&"▲"+g.tags.kakoiB,g.tags?.kakoiW&&"△"+g.tags.kakoiW].filter(Boolean).join("　");const sess=(g.sessions||[]).map((s,i)=>"<div class='sess-row'><span class='sess-label'>"+(i+1)+"回目</span><span class='sess-rate'>"+s.score.rate+"%</span><span class='sess-label'>"+formatScoreValue(s.score)+"/"+s.score.graded+"　"+fmtDate(s.endedAt)+"</span></div>").join("");return "<div class='lib-item'><h3>"+esc(g.title)+"</h3><div class='lib-meta'>"+esc(players)+"</div>"+(md["棋戦"]?"<div class='lib-meta'>棋戦："+esc(md["棋戦"])+"</div>":"")+(md["開始日時"]||md["対局日"]||md["日付"]?"<div class='lib-meta'>日付："+esc(md["開始日時"]||md["対局日"]||md["日付"])+"</div>":"")+(tag?"<div class='lib-meta'>"+esc(tag)+"</div>":"")+(g.tags?.memo?"<div class='lib-meta'>メモ："+esc(g.tags.memo)+"</div>":"")+(sess?"<div class='sess-list'>"+sess+"</div>":"<div class='note'>学習記録はまだありません。</div>")+"<div class='lib-buttons'><button class='primary' onclick='openGameFromLib(\""+g.id+"\")'>並べる</button><button class='blue' onclick='reviewGameFromLib(\""+g.id+"\")'>復習対象だけ</button><button class='danger' onclick='deleteGame(\""+g.id+"\")'>削除</button></div></div>";}).join("");}
+function sideLabel(side){return {b:"▲先手",w:"△後手",both:"両方"}[side]||side||"-";}
+function answeredRange(session){
+  const plys=(session.records||[]).map(r=>r.ply).filter(n=>Number.isFinite(n));
+  if(plys.length)return Math.min(...plys)+"〜"+Math.max(...plys)+"手目（"+plys.length+"問）";
+  return (session.startPly||0)+"〜"+(session.endPly||0)+"手目";
+}
+function renderPauseList(db){
+  const pauses=db.pauses||[];
+  if(!pauses.length)return "";
+  return "<div class='pause-card'><h3>一時停止中</h3>"+
+    pauses.map(p=>{
+      const q=p.q||{};
+      const done=(q.records||[]).length;
+      const title=esc(p.title||"無題の棋譜");
+      return "<div class='lib-item' style='margin:7px 0;background:#fffaf0'><h3>"+title+"</h3>"+
+        "<div class='lib-meta'>一時停止日："+fmtDate(p.pausedAt)+"　予想："+sideLabel(p.side)+"　現在："+(q.target||p.cur||0)+"手目前後　記録済み："+done+"問</div>"+
+        "<div class='lib-buttons'><button class='primary' onclick='resumePause(\""+p.id+"\")'>再開</button><button class='danger' onclick='deletePause(\""+p.id+"\")'>削除</button></div></div>";
+    }).join("")+"</div>";
+}
+function renderLibrary(){
+  const db=loadDb();
+  const q=($("libSearch")?.value||"").trim().toLowerCase();
+  let games=db.games||[];
+  if(q){games=games.filter(g=>JSON.stringify([g.title,g.meta,g.tags]).toLowerCase().includes(q));}
+  const list=$("libList");
+  const pauseHtml=renderPauseList(db);
+  if(!games.length){list.innerHTML=pauseHtml+"<div class='note'>保存済みの棋譜がありません。</div>";return;}
+  const gameHtml=games.map(g=>{
+    const md=g.meta||{};
+    const sente=md["先手"]||md["下手"]||"先手";
+    const gote=md["後手"]||md["上手"]||"後手";
+    const tag=[g.tags?.senkei,g.tags?.kakoiB&&"▲"+g.tags.kakoiB,g.tags?.kakoiW&&"△"+g.tags.kakoiW].filter(Boolean).join("　");
+    const playDate=md["開始日時"]||md["対局日"]||md["日付"]||"";
+    const sessions=(g.sessions||[]).map((sess,i)=>{
+      const score=sess.score||calcScore(sess.records||[]);
+      return "<div class='sess-row' style='display:block'>"+
+        "<div><span class='sess-label'>"+(i+1)+"回目</span> <span class='sess-rate'>"+score.rate+"%</span> <span class='sess-label'>得点 "+formatScoreValue(score)+"/"+score.graded+"</span></div>"+
+        "<div class='lib-meta'>棋譜並べ日："+fmtDate(sess.endedAt||sess.startedAt)+"　予想："+sideLabel(sess.side)+"　回答："+answeredRange(sess)+"</div>"+
+        "</div>";
+    }).join("");
+    return "<div class='lib-item'><h3>"+esc(g.title)+"</h3>"+
+      "<div class='lib-meta'>▲先手："+esc(sente)+"</div>"+
+      "<div class='lib-meta'>△後手："+esc(gote)+"</div>"+
+      (md["棋戦"]?"<div class='lib-meta'>棋戦："+esc(md["棋戦"])+"</div>":"")+
+      (playDate?"<div class='lib-meta'>対局日："+esc(playDate)+"</div>":"")+
+      (tag?"<div class='lib-meta'>戦型・囲い："+esc(tag)+"</div>":"")+
+      (g.tags?.memo?"<div class='lib-meta'>メモ："+esc(g.tags.memo)+"</div>":"")+
+      (sessions?"<div class='sess-list'>"+sessions+"</div>":"<div class='note'>学習記録はまだありません。</div>")+
+      "<div class='lib-buttons'><button class='primary' onclick='openGameFromLib(\""+g.id+"\")'>並べる</button><button class='blue' onclick='reviewGameFromLib(\""+g.id+"\")'>復習対象だけ</button><button class='danger' onclick='deleteGame(\""+g.id+"\")'>削除</button></div></div>";
+  }).join("");
+  list.innerHTML=pauseHtml+gameHtml;
+}
 function openGameFromLib(id){const db=loadDb();const g=db.games.find(x=>x.id===id);if(!g)return;switchTab("study");loadKif(g.kifText,{libId:g.id,side:"b"});toast("ライブラリから読み込みました");}
 function reviewGameFromLib(id){const db=loadDb();const g=db.games.find(x=>x.id===id);if(!g)return;const last=(g.sessions||[]).slice(-1)[0];if(!last){toast("復習対象を作るには、先に一度成績を記録してください");return;}const targets=last.records.filter(r=>r.judgement!=="match"||r.tags.includes("あとで復習")||r.tags.includes("絶対に覚えたい")||r.tags.includes("難しい手")).map(r=>r.ply);if(!targets.length){toast("直近成績に復習対象がありません");return;}switchTab("study");loadKif(g.kifText,{libId:g.id,side:"both",cur:last.startPly||0,reviewPlys:targets,reviewLabel:"直近成績の復習対象"});toast("復習対象"+targets.length+"問を読み込みました");}
 function deleteGame(id){if(!confirm("この棋譜と学習記録を削除しますか？"))return;const db=loadDb();db.games=(db.games||[]).filter(g=>g.id!==id);saveDb(db);renderLibrary();toast("削除しました");}
 function exportDb(){const data=JSON.stringify(loadDb(),null,2);const blob=new Blob([data],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="shogi-kifu-trainer-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();URL.revokeObjectURL(a.href);}
-$("importInput").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const inc=JSON.parse(rd.result);const db=loadDb();const ids=new Set((db.games||[]).map(g=>g.id));for(const g of inc.games||[]){if(!ids.has(g.id))db.games.push(g);}saveDb(db);renderLibrary();toast("バックアップを読み込みました");}catch(err){toast("JSONの読み込みに失敗しました");}};rd.readAsText(f,"UTF-8");});
+function sessionKey(sess){return sess.id||[sess.startedAt,sess.endedAt,sess.side,sess.startPly,sess.endPly,(sess.records||[]).length].join("|");}
+function mergeImportedDb(inc){
+  const db=loadDb();
+  db.games=db.games||[];
+  db.pauses=db.pauses||[];
+  const importedGames=inc.games||[];
+  for(const g of importedGames){
+    let existing=db.games.find(x=>x.id===g.id)||db.games.find(x=>x.hash&&g.hash&&x.hash===g.hash);
+    if(!existing){
+      db.games.push(g);
+      continue;
+    }
+    const existingSessionKeys=new Set((existing.sessions||[]).map(sessionKey));
+    existing.sessions=existing.sessions||[];
+    for(const sess of g.sessions||[]){
+      const key=sessionKey(sess);
+      if(!existingSessionKeys.has(key)){existing.sessions.push(sess);existingSessionKeys.add(key);}
+    }
+    if((g.updatedAt||"")>(existing.updatedAt||"")){
+      existing.title=g.title||existing.title;
+      existing.tags=g.tags||existing.tags;
+      existing.meta=g.meta||existing.meta;
+      existing.kifText=g.kifText||existing.kifText;
+      existing.updatedAt=g.updatedAt;
+    }
+  }
+  const importedPauses=inc.pauses||[];
+  const pauseIds=new Set(db.pauses.map(p=>p.id));
+  for(const p of importedPauses){
+    if(!pauseIds.has(p.id)){db.pauses.push(p);pauseIds.add(p.id);}
+  }
+  saveDb(db);
+  return {games:db.games.length,pauses:db.pauses.length};
+}
+$("importInput").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{try{const inc=JSON.parse(rd.result);const res=mergeImportedDb(inc);renderLibrary();toast("バックアップを読み込みました（棋譜"+res.games+"件・一時停止"+res.pauses+"件）");}catch(err){toast("JSONの読み込みに失敗しました");}};rd.readAsText(f,"UTF-8");});
 function exportSessionCsv(){if(!Q.lastSession){toast("書き出す成績がありません");return;}const header=["手数","実戦手","予想手","判定","タグ","メモ","思考時間ms"];const lines=[header].concat(Q.lastSession.records.map(r=>[r.ply,r.actualMove,r.predictedMove,judgementMark(r.judgement),r.tags.join("・"),r.note,r.thinkMs]));const csv=lines.map(row=>row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\n");const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="shogi-session-"+new Date().toISOString().slice(0,10)+".csv";a.click();URL.revokeObjectURL(a.href);}
 window.addEventListener("load",()=>{try{localStorage.setItem("__test","1");localStorage.removeItem("__test");}catch(e){toast("この環境では保存が使えない可能性があります");}});
 </script>
