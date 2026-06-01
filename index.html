@@ -139,7 +139,7 @@ body.quiz-on .quick-quiz{display:none!important;}
     <h1>将棋棋譜クイズトレーナー</h1>
     <div class="small">棋譜を隠して次の一手を考える学習用</div>
   </div>
-  <div class="ver">single HTML<br>GPT版1.0</div>
+  <div class="ver">single HTML<br>GPT版1.1</div>
 </header>
 
 <nav class="tabs">
@@ -281,6 +281,10 @@ PI
       <button class="ghost" onclick="setReviewFilter('weak')">△・×を表示</button>
       <button class="ghost" onclick="setReviewFilter('tag')">復習タグを表示</button>
     </div>
+    <div class="row2" style="margin-top:8px">
+      <button class="primary" onclick="startCurrentReviewListQuiz()">このリストだけ出題</button>
+      <button class="ghost" onclick="previewReviewListQuiz()">出題数を確認</button>
+    </div>
     <div id="reviewSummary" class="review-summary"></div>
     <div id="reviewBreakdown" class="review-breakdown"></div>
   </section>
@@ -322,7 +326,7 @@ PI
 
 <script>
 "use strict";
-const APP_VERSION="1.0.0";
+const APP_VERSION="1.1.0";
 const DB_KEY="shogiKifuQuizTrainerGpt.v1";
 const FW={"０":0,"１":1,"２":2,"３":3,"４":4,"５":5,"６":6,"７":7,"８":8,"９":9,"0":0,"1":1,"2":2,"3":3,"4":4,"5":5,"6":6,"7":7,"8":8,"9":9};
 const KAN={"一":1,"二":2,"三":3,"四":4,"五":5,"六":6,"七":7,"八":8,"九":9};
@@ -863,6 +867,8 @@ function collectAllAnswerRecords(){
           sessionDate,
           side:rec.side||"",
           location:loc,
+          problemNo:rec.problemNo||rec.index||null,
+          problemId:rec.problemId||null,
           ply:rec.ply||null,
           actualMove:rec.actualMove||rec.bestMove||"",
           bestMove:rec.bestMove||rec.actualMove||"",
@@ -925,7 +931,7 @@ function reviewFilterMatch(r,filter){
   if(filter==="tag")return isReviewTag(r.tags);
   return true;
 }
-function renderReviewList(){
+function getCurrentReviewRows(){
   const all=collectAllAnswerRecords();
   const filter=$("reviewFilter")?.value||"all";
   const q=($("reviewSearch")?.value||"").trim().toLowerCase();
@@ -934,6 +940,10 @@ function renderReviewList(){
     rows=rows.filter(r=>JSON.stringify([r.sourceTitle,r.location,r.actualMove,r.bestMove,r.playedMove,r.predictedMove,r.tags,r.note,r.senkei,r.kakoiB,r.kakoiW]).toLowerCase().includes(q));
   }
   rows.sort((a,b)=>(b.sessionDate||"").localeCompare(a.sessionDate||""));
+  return rows;
+}
+function renderReviewList(){
+  const rows=getCurrentReviewRows();
   if(!rows.length){$("reviewList").innerHTML="<div class='note'>復習対象はありません。</div>";return;}
   $("reviewList").innerHTML=rows.map(r=>{
     const mark=judgementMark(r.judgement);
@@ -946,6 +956,164 @@ function renderReviewList(){
     const sourceMeta=[r.sourceLabel,r.location,sideLabel(r.side),fmtDate(r.sessionDate)].filter(Boolean).join("　");
     return `<div class="review-item"><h3><span class="review-mark ${r.judgement}">${mark}</span> ${esc(r.sourceTitle)}</h3><div class="review-meta">${esc(sourceMeta)}</div>${moveLine}${evalLine}${r.predictedMove?`<div class="review-meta">予想：${esc(r.predictedMove)}</div>`:""}${tagLine}${noteLine}</div>`;
   }).join("");
+}
+
+
+/* ===== 復習対象リストだけ出題 v1.1 ===== */
+const REVIEW_SFEN_FROM_JP={"歩":"P","香":"L","桂":"N","銀":"S","金":"G","角":"B","飛":"R","玉":"K"};
+function reviewPositionToSfen(pos,sideToMove="b",moveNo=1){
+  const rows=[];
+  for(let r=1;r<=9;r++){
+    let row="",empty=0;
+    for(let f=9;f>=1;f--){
+      const pc=pos.board?.[r]?.[f];
+      if(!pc){empty++;continue;}
+      if(empty){row+=String(empty);empty=0;}
+      let letter=REVIEW_SFEN_FROM_JP[pc.base]||"";
+      if(pc.owner==="w")letter=letter.toLowerCase();
+      if(pc.promoted&&["歩","香","桂","銀","角","飛"].includes(pc.base))row+="+";
+      row+=letter;
+    }
+    if(empty)row+=String(empty);
+    rows.push(row);
+  }
+  const handOrder=["飛","角","金","銀","桂","香","歩"];
+  let hands="";
+  for(const side of ["b","w"]){
+    const h=pos.hands?.[side]||{};
+    for(const piece of handOrder){
+      const n=h[piece]||0;
+      if(n>0){
+        if(n>1)hands+=String(n);
+        let letter=REVIEW_SFEN_FROM_JP[piece]||"";
+        hands+=side==="b"?letter:letter.toLowerCase();
+      }
+    }
+  }
+  return rows.join("/")+" "+(sideToMove==="w"?"w":"b")+" "+(hands||"-")+" "+Math.max(1,Number(moveNo)||1);
+}
+function reviewReplaySavedGame(game){
+  const fmt=game.sourceFormat||"kif";
+  if(fmt==="usi"){
+    const rec=parseUsiRecord(game.kifText||"");
+    return {moves:rec.moves,positions:buildPositionsFrom(rec.startPosition,rec.moves)};
+  }
+  if(fmt==="csa"){
+    const rec=parseCsaRecord(game.kifText||"");
+    return {moves:rec.moves,positions:buildPositionsFrom(rec.startPosition,rec.moves)};
+  }
+  const parsed=parseKif(game.kifText||"");
+  return {moves:parsed.moves,positions:buildPositions(parsed.moves)};
+}
+function reviewUniqueList(arr){return [...new Set((arr||[]).filter(Boolean))];}
+function reviewProblemFromKifuRow(row,db,cache){
+  const game=(db.games||[]).find(g=>g.id===row.sourceId);
+  if(!game||!row.ply)return null;
+  let replay=cache[game.id];
+  if(!replay){replay=reviewReplaySavedGame(game);cache[game.id]=replay;}
+  const ply=Number(row.ply);
+  const move=replay.moves[ply-1];
+  const before=replay.positions[ply-1];
+  if(!move||!before)return null;
+  const actual=moveJP(move);
+  const noteParts=[];
+  if(row.predictedMove)noteParts.push("前回予想: "+row.predictedMove);
+  if(row.note)noteParts.push(row.note);
+  return {
+    id:"review-kifu-"+game.id+"-"+ply,
+    originalPly:ply,
+    sideToMove:move.color,
+    positionSfen:reviewPositionToSfen(before,move.color,ply),
+    questionTitle:(game.title||row.sourceTitle||"棋譜")+" "+ply+"手目 復習",
+    playedMove:{text:actual,usi:"",scoreAfter:null},
+    bestMove:{text:actual,usi:"",scoreAfter:null},
+    candidateMoves:[],
+    scoreBefore:null,
+    scoreDrop:null,
+    severity:"復習対象",
+    themeTags:reviewUniqueList([...(row.tags||[]),game.tags?.senkei,game.tags?.kakoiB,game.tags?.kakoiW]),
+    note:noteParts.join("\n")
+  };
+}
+function reviewProblemFromProblemSetRow(row,db){
+  const ps=(db.problemSets||[]).find(p=>p.id===row.sourceId);
+  if(!ps||!ps.problemSetText)return null;
+  let norm;
+  try{norm=normalizeProblemSet(JSON.parse(ps.problemSetText),ps.problemSetText);}catch(e){return null;}
+  let pr=null;
+  if(row.problemId)pr=norm.problems.find(p=>p.id===row.problemId);
+  if(!pr&&row.problemNo)pr=norm.problems[Number(row.problemNo)-1];
+  if(!pr&&row.ply)pr=norm.problems.find(p=>Number(p.originalPly)===Number(row.ply));
+  if(!pr)return null;
+  const noteParts=[];
+  if(pr.note)noteParts.push(pr.note);
+  if(row.predictedMove)noteParts.push("前回予想: "+row.predictedMove);
+  if(row.note)noteParts.push(row.note);
+  return {
+    id:"review-problem-"+ps.id+"-"+(pr.id||row.problemNo||row.ply||pr.index),
+    originalPly:pr.originalPly,
+    sideToMove:pr.sideToMove,
+    positionSfen:pr.positionSfen,
+    questionTitle:(ps.title||row.sourceTitle||"局面問題集")+" "+(row.location||pr.questionTitle||""),
+    playedMove:pr.playedMove,
+    bestMove:pr.bestMove,
+    candidateMoves:pr.candidateMoves||[],
+    scoreBefore:pr.scoreBefore,
+    scoreDrop:pr.scoreDrop,
+    severity:pr.severity||"復習対象",
+    themeTags:reviewUniqueList([...(pr.themeTags||[]),...(row.tags||[])]),
+    note:noteParts.join("\n")
+  };
+}
+function buildProblemSetFromReviewRows(rows){
+  const db=loadDb();
+  const cache={};
+  const problems=[];
+  const seen=new Set();
+  let skipped=0;
+  for(const row of rows){
+    let pr=null;
+    try{
+      if(row.sourceType==="kifu")pr=reviewProblemFromKifuRow(row,db,cache);
+      else if(row.sourceType==="problemset")pr=reviewProblemFromProblemSetRow(row,db);
+    }catch(e){pr=null;}
+    if(!pr){skipped++;continue;}
+    if(seen.has(pr.id))continue;
+    seen.add(pr.id);
+    problems.push(pr);
+  }
+  const filterEl=$("reviewFilter");
+  const filterLabel=filterEl?filterEl.options[filterEl.selectedIndex]?.textContent:"復習対象";
+  return {
+    skipped,
+    problemSet:{
+      format:"shogi-nextmove-problemset",
+      version:1,
+      title:"復習リスト: "+(filterLabel||"復習対象"),
+      source:{eventName:"復習・成績タブ",playedAt:new Date().toISOString().slice(0,10)},
+      engine:{name:""},
+      problems
+    }
+  };
+}
+function previewReviewListQuiz(){
+  const rows=getCurrentReviewRows();
+  if(!rows.length){toast("現在の表示条件に復習対象がありません");return;}
+  const built=buildProblemSetFromReviewRows(rows);
+  toast("現在のリスト: "+rows.length+"件 / 出題可能: "+built.problemSet.problems.length+"問"+(built.skipped?"（読み込み不可 "+built.skipped+"件）":""));
+}
+function startCurrentReviewListQuiz(){
+  const rows=getCurrentReviewRows();
+  if(!rows.length){toast("現在の表示条件に復習対象がありません");return;}
+  const built=buildProblemSetFromReviewRows(rows);
+  const ps=built.problemSet;
+  if(!ps.problems.length){toast("出題できる復習対象がありません。元の棋譜・問題集データが残っているか確認してください");return;}
+  const text=JSON.stringify(ps,null,2);
+  switchTab("study");
+  if(loadProblemSetRaw(text,{cur:0})){
+    startProblemQuiz(0);
+    toast("復習リストから"+ps.problems.length+"問を出題します"+(built.skipped?"（"+built.skipped+"件は読み込み不可）":""));
+  }
 }
 window.addEventListener("load",()=>{try{localStorage.setItem("__test","1");localStorage.removeItem("__test");}catch(e){toast("この環境では保存が使えない可能性があります");}});
 </script>
